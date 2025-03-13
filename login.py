@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, PhotoImage, Entry, Label, Button
 import webbrowser
+import os
 from conectar_bd import conectar_bd
 import banner_admin
 import banner_therapeut
@@ -10,25 +11,35 @@ def abrir_url(url):
     webbrowser.open(url)
 
 def crear_encabezado_footer(ventana):
+    """Crea el encabezado y footer de la ventana con imágenes correctamente cargadas."""
+
     # Encabezado
     header = tk.Frame(ventana, bg="#2E3B55", height=80)
     header.pack(fill="x")
 
-    logo_izquierdo = PhotoImage(file="icono/logofcd.png").subsample(5, 5)
-    logo_derecho = PhotoImage(file="icono/logo.png").subsample(5, 5)
+    ruta_logo_izq = os.path.join("icono", "logofcd.png")
+    ruta_logo_der = os.path.join("icono", "logo.png")
 
-    lbl_logo_izq = tk.Label(header, image=logo_izquierdo, bg="#2E3B55")
-    lbl_logo_izq.pack(side="left", padx=10, pady=5)
+    try:
+        logo_izquierdo = PhotoImage(file=ruta_logo_izq).subsample(5, 5)
+        logo_derecho = PhotoImage(file=ruta_logo_der).subsample(5, 5)
+    except:
+        logo_izquierdo = None
+        logo_derecho = None
+
+    if logo_izquierdo:
+        lbl_logo_izq = tk.Label(header, image=logo_izquierdo, bg="#2E3B55")
+        lbl_logo_izq.image = logo_izquierdo
+        lbl_logo_izq.pack(side="left", padx=10, pady=5)
 
     titulo = tk.Label(header, text="SISTEMA DE REGISTRO DE CITAS\n(FUNDACIÓN CORAZÓN DOWN)",
                       font=("Arial", 14, "bold"), bg="#2E3B55", fg="white")
     titulo.pack(side="left", expand=True)
 
-    lbl_logo_der = tk.Label(header, image=logo_derecho, bg="#2E3B55")
-    lbl_logo_der.pack(side="right", padx=10, pady=5)
-
-    ventana.logo_izquierdo = logo_izquierdo
-    ventana.logo_derecho = logo_derecho
+    if logo_derecho:
+        lbl_logo_der = tk.Label(header, image=logo_derecho, bg="#2E3B55")
+        lbl_logo_der.image = logo_derecho
+        lbl_logo_der.pack(side="right", padx=10, pady=5)
 
     # Footer
     footer = tk.Frame(ventana, bg="#D50000", height=120)
@@ -37,77 +48,82 @@ def crear_encabezado_footer(ventana):
     footer_content = tk.Frame(footer, bg="#D50000")
     footer_content.pack(fill="x")
 
-    logo_footer = PhotoImage(file="icono/logofcd.png").subsample(5, 5)
-    lbl_logo_footer = tk.Label(footer_content, image=logo_footer, bg="#D50000")
-    lbl_logo_footer.pack(side="left", padx=20, pady=5)
+    ruta_logo_footer = os.path.join("icono", "logofcd.png")
 
+    try:
+        logo_footer = PhotoImage(file=ruta_logo_footer).subsample(5, 5)
+    except:
+        logo_footer = None
+
+    if logo_footer:
+        lbl_logo_footer = tk.Label(footer_content, image=logo_footer, bg="#D50000")
+        lbl_logo_footer.image = logo_footer
+        lbl_logo_footer.pack(side="left", padx=20, pady=5)
+
+    # Redes sociales
     info_frame = tk.Frame(footer_content, bg="#D50000")
     info_frame.pack(side="left", expand=True)
 
     redes_frame = tk.Frame(info_frame, bg="#D50000")
     redes_frame.pack()
 
-    # Iconos de redes sociales
-    icono_facebook = PhotoImage(file="icono/ficon.png").subsample(2, 2)
-    icono_x = PhotoImage(file="icono/xicon.png").subsample(2, 2)
-    icono_instagram = PhotoImage(file="icono/insicon.png").subsample(2, 2)
-    icono_tiktok = PhotoImage(file="icono/ticon.png").subsample(2, 2)
+    redes = {
+        "Facebook": "ficon.png",
+        "X": "xicon.png",
+        "Instagram": "insicon.png",
+        "TikTok": "ticon.png"
+    }
+    enlaces = {
+        "Facebook": "https://www.facebook.com/FundacionCorazonDown",
+        "X": "https://x.com/mariopmtz",
+        "Instagram": "https://www.instagram.com/fundacioncorazondown",
+        "TikTok": "https://www.tiktok.com/@corazndown"
+    }
 
-    for icono, url in [
-        (icono_facebook, "https://www.facebook.com/FundacionCorazonDown"),
-        (icono_x, "https://x.com/mariopmtz"),
-        (icono_instagram, "https://www.instagram.com/fundacioncorazondown"),
-        (icono_tiktok, "https://www.tiktok.com/@corazndown")
-    ]:
-        btn_red = tk.Button(redes_frame, image=icono, bg="#D50000", relief="flat", command=lambda u=url: abrir_url(u))
-        btn_red.image = icono
-        btn_red.pack(side="left", padx=5)
+    for red, icono in redes.items():
+        ruta_icono = os.path.join("icono", icono)
+        try:
+            img_red = PhotoImage(file=ruta_icono).subsample(2, 2)
+            btn_red = tk.Button(redes_frame, image=img_red, bg="#D50000", relief="flat",
+                                command=lambda u=enlaces[red]: abrir_url(u))
+            btn_red.image = img_red
+            btn_red.pack(side="left", padx=5)
+        except:
+            pass
 
     lbl_direccion = tk.Label(info_frame, text="XICOTÉNCATL 1017, ZONA FEB 10 2015, BARRIO DE LA NORIA, 68100 OAXACA DE JUÁREZ, OAX.",
                              font=("Arial", 9, "bold"), bg="#D50000", fg="white", wraplength=700, justify="center")
     lbl_direccion.pack(pady=(5, 0))
 
-    ventana.logo_footer = logo_footer
-    ventana.icono_facebook = icono_facebook
-    ventana.icono_x = icono_x
-    ventana.icono_instagram = icono_instagram
-    ventana.icono_tiktok = icono_tiktok
-
-def ventana_login_personalizada(rol):
-    ventana = tk.Tk()
+def ventana_login_personalizada(rol, ventana_padre=None):
+    ventana = tk.Toplevel()  # Ahora usamos Toplevel() para evitar miniventanas
     ventana.title(f"Login {rol} - Fundación Corazón Down")
     ventana.geometry("800x500")
     ventana.configure(bg="white")
+
+    if ventana_padre:
+        ventana.protocol("WM_DELETE_WINDOW", lambda: restaurar_ventana_principal(ventana, ventana_padre))
 
     crear_encabezado_footer(ventana)
 
     tk.Label(ventana, text=f"LOGIN {rol.upper()}", font=("Arial", 16, "bold"), bg="white", fg="black").pack(pady=10)
 
-    # Icono de usuario
-    icono_usuario = PhotoImage(file="icono/user.png").subsample(3, 3)
-    lbl_icono = tk.Label(ventana, image=icono_usuario, bg="white")
-    lbl_icono.pack(pady=10)
-
     # Entradas de usuario y contraseña
-    entry_usuario = Entry(ventana, font=("Arial", 12), fg="green", relief="flat", width=40)
-    entry_usuario.insert(0, "USUARIO")
+    entry_usuario = Entry(ventana, font=("Arial", 12))
     entry_usuario.pack(pady=5)
-
-    entry_password = Entry(ventana, font=("Arial", 12), show="*", fg="green", relief="flat", width=40)
-    entry_password.insert(0, "CONTRASEÑA")
+    entry_password = Entry(ventana, font=("Arial", 12), show="*")
     entry_password.pack(pady=5)
 
-    # Botón de login
-    btn_login = Button(ventana, text="INICIAR SESIÓN", command=lambda: login(entry_usuario.get(), entry_password.get(), rol),
-                       font=("Arial", 12, "bold"), bg="red", fg="white", relief="flat", width=20)
+    btn_login = Button(ventana, text="INICIAR SESIÓN", font=("Arial", 12, "bold"), bg="red", fg="white", width=20)
     btn_login.pack(pady=20)
 
-    # Evitar recolección de basura
-    ventana.icono_usuario = icono_usuario
+def restaurar_ventana_principal(ventana, ventana_padre):
+    ventana.destroy()
+    ventana_padre.deiconify()  # Restaura la ventana principal
 
-    ventana.mainloop()
 
 def login(usuario, contraseña, rol):
+    """Función para validar el login y abrir el menú principal."""
     conn = conectar_bd()
     cursor = conn.cursor(dictionary=True)
 
@@ -127,6 +143,7 @@ def login(usuario, contraseña, rol):
         messagebox.showerror("Error", "Credenciales incorrectas")
 
 def abrir_menu_principal(user):
+    """Abre el menú principal dependiendo del tipo de usuario."""
     if user['user_type'] == 'Administrator':
         banner_admin(user)
     elif user['user_type'] == 'Receptionist':
@@ -134,6 +151,6 @@ def abrir_menu_principal(user):
     elif user['user_type'] == 'Therapist':
         banner_therapeut(user)
 
-# Ejemplo de cómo lanzar la ventana personalizada
+# Prueba de login (Opcional)
 if __name__ == "__main__":
     ventana_login_personalizada("Administrador")
