@@ -3,7 +3,11 @@ from tkinter import messagebox, PhotoImage, Entry, Label, Button
 import webbrowser
 import os
 from conectar_bd import conectar_bd
-import register  # Importamos register.py para enlazarlo correctamente
+import login  # Importamos login.py para enlazar correctamente
+
+def cerrar_aplicacion():
+    """ Cierra la aplicación por completo al cerrar una subventana. """
+    os._exit(0)  # Fuerza la terminación del programa sin dejar procesos abiertos
 
 def abrir_url(url):
     """ Abre enlaces en el navegador """
@@ -11,7 +15,7 @@ def abrir_url(url):
 
 def crear_encabezado_footer(ventana):
     """ Crea el encabezado y footer con estilos unificados """
-
+    
     # Encabezado
     header = tk.Frame(ventana, bg="#2E3B55", height=80)
     header.pack(fill="x")
@@ -22,7 +26,7 @@ def crear_encabezado_footer(ventana):
     try:
         logo_izquierdo = PhotoImage(file=ruta_logo_izq).subsample(5, 5)
         logo_derecho = PhotoImage(file=ruta_logo_der).subsample(5, 5)
-    except:
+    except Exception as e:
         logo_izquierdo = None
         logo_derecho = None
 
@@ -39,7 +43,8 @@ def crear_encabezado_footer(ventana):
         lbl_logo_der = tk.Label(header, image=logo_derecho, bg="#2E3B55")
         lbl_logo_der.image = logo_derecho
         lbl_logo_der.pack(side="right", padx=10, pady=5)
-  # Footer
+
+    # Footer
     footer = tk.Frame(ventana, bg="#D50000", height=120)
     footer.pack(side="bottom", fill="x")
 
@@ -50,7 +55,7 @@ def crear_encabezado_footer(ventana):
 
     try:
         logo_footer = PhotoImage(file=ruta_logo_footer).subsample(5, 5)
-    except:
+    except Exception as e:
         logo_footer = None
 
     if logo_footer:
@@ -86,12 +91,13 @@ def crear_encabezado_footer(ventana):
                                 command=lambda u=enlaces[red]: abrir_url(u))
             btn_red.image = img_red
             btn_red.pack(side="left", padx=5)
-        except:
+        except Exception as e:
             pass
 
     lbl_direccion = tk.Label(info_frame, text="XICOTÉNCATL 1017, ZONA FEB 10 2015, BARRIO DE LA NORIA, 68100 OAXACA DE JUÁREZ, OAX.",
                              font=("Arial", 9, "bold"), bg="#D50000", fg="white", wraplength=700, justify="center")
     lbl_direccion.pack(pady=(5, 0))
+
 def crear_entry(ventana, placeholder, is_password=False):
     """ Crea un campo de entrada estilizado con placeholder dinámico. """
     
@@ -111,81 +117,63 @@ def crear_entry(ventana, placeholder, is_password=False):
     entry.bind("<FocusIn>", on_focus_in)
     entry.bind("<FocusOut>", on_focus_out)
 
-    entry.pack(pady=5, ipady=8, ipadx=5)  # Ajustamos altura y padding interno
+    entry.pack(pady=5, ipady=8, ipadx=5)
     entry.config(highlightthickness=2, highlightbackground="lightgray", highlightcolor="#28A745", relief="ridge")
 
     return entry
 
-def ventana_login_personalizada(rol, ventana_padre):
-    """Crea la ventana de login personalizada y cierra la aplicación al cerrarla."""
+def registrar_usuario(name, user_type, email, password):
+    """ Registra un nuevo usuario en la base de datos """
+    if not name or not user_type or not email or not password:
+        messagebox.showerror("Error", "Todos los campos son obligatorios")
+        return
+    
+    conn = conectar_bd()
+    cursor = conn.cursor()
+    
+    try:
+        query = """
+        INSERT INTO users (name, user_type, email, password) 
+        VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(query, (name, user_type, email, password))
+        conn.commit()
+        messagebox.showinfo("Éxito", "Usuario registrado correctamente")
+        conn.close()
+        cerrar_aplicacion()  # Cierra la app para reiniciar desde welcome_panel.py
+    except Exception as e:
+        messagebox.showerror("Error", f"Error al registrar: {str(e)}")
+        conn.close()
 
-    ventana = tk.Toplevel()  # Usamos Toplevel para evitar múltiples Tk()
-    ventana.title(f"Login {rol} - Fundación Corazón Down")
+def ventana_registro(rol):
+    """ Crea la ventana de registro de usuario """
+    ventana = tk.Toplevel()
+    ventana.title("Registro de Usuario - Fundación Corazón Down")
     ventana.geometry("800x500")
     ventana.configure(bg="white")
-
-    if ventana_padre:
-        ventana_padre.withdraw()  # Oculta la ventana principal
-        ventana.protocol("WM_DELETE_WINDOW", lambda: cerrar_aplicacion())  # Cierra la app al cerrar esta ventana
-
+    ventana.protocol("WM_DELETE_WINDOW", cerrar_aplicacion)
+    
     crear_encabezado_footer(ventana)
 
-    tk.Label(ventana, text=f"LOGIN {rol.upper()}", font=("Arial", 16, "bold"), bg="white", fg="black").pack(pady=10)
+    Label(ventana, text="REGISTRO DE USUARIO", font=("Arial", 16, "bold"), bg="white", fg="black").pack(pady=10)
 
-    # Entradas de usuario y contraseña
-    entry_usuario = crear_entry(ventana, "Usuario")
+    entry_nombre = crear_entry(ventana, "Nombre Completo")
+    entry_email = crear_entry(ventana, "Correo Electrónico")
     entry_password = crear_entry(ventana, "Contraseña", is_password=True)
 
-    # Botón de login
-    btn_login = Button(ventana, text="INICIAR SESIÓN", command=lambda: login(entry_usuario.get(), entry_password.get(), rol),
-                       font=("Arial", 12, "bold"), bg="red", fg="white", relief="flat", width=20, cursor="hand2")
-    btn_login.pack(pady=10)
+    # Dropdown de tipo de usuario
+    opciones_roles = ["Administrator", "Receptionist", "Therapist"]
+    user_type_var = tk.StringVar(ventana)
+    user_type_var.set(opciones_roles[0])  # Valor por defecto
+    menu_roles = tk.OptionMenu(ventana, user_type_var, *opciones_roles)
+    menu_roles.config(font=("Arial", 12), bg="white", fg="black")
+    menu_roles.pack(pady=10)
 
-    # Contenedor de hipervínculos
-    link_frame = tk.Frame(ventana, bg="white")
-    link_frame.pack(pady=10)
-
-    # Hipervínculos en color naranja
-    lbl_crear_cuenta = tk.Label(link_frame, text="CREAR CUENTA", font=("Arial", 10, "bold"), fg="orange", cursor="hand2", bg="white")
-    lbl_crear_cuenta.pack(side="left", padx=10)
-    lbl_crear_cuenta.bind("<Button-1>", lambda e: abrir_registro(ventana, rol))
-
-    lbl_olvido_password = tk.Label(link_frame, text="OLVIDÉ MI CONTRASEÑA", font=("Arial", 10, "bold"), fg="orange", cursor="hand2", bg="white")
-    lbl_olvido_password.pack(side="left", padx=10)
-    lbl_olvido_password.bind("<Button-1>", lambda e: recuperar_contraseña())
-
-def cerrar_aplicacion():
-    """ Cierra la aplicación por completo al cerrar una subventana. """
-    os._exit(0)  # Fuerza la terminación del programa sin dejar procesos abiertos
-
-def abrir_registro(ventana_login, rol):
-    """ Cierra la ventana de login y abre la de registro con el rol correcto """
-    ventana_login.destroy()
-    register.ventana_registro(rol)  # Pasamos el rol correctamente
-
-def recuperar_contraseña():
-    """ Simula el proceso de recuperación de contraseña """
-    messagebox.showinfo("Recuperación", "Proceso de recuperación de contraseña en desarrollo.")
-
-def login(usuario, contraseña, rol):
-    """Función para validar el login y abrir el menú principal."""
-    conn = conectar_bd()
-    cursor = conn.cursor(dictionary=True)
-
-    query = "SELECT * FROM users WHERE email = %s AND password = %s"
-    cursor.execute(query, (usuario, contraseña))
-    user = cursor.fetchone()
-
-    conn.close()
-
-    if user:
-        if user['user_type'] == rol:
-            messagebox.showinfo("Bienvenido", f"Acceso concedido como {user['user_type']}")
-        else:
-            messagebox.showerror("Error", f"No tienes permisos de {rol}")
-    else:
-        messagebox.showerror("Error", "Credenciales incorrectas")
+    # Botón de registro
+    btn_registro = Button(ventana, text="REGISTRAR", command=lambda: registrar_usuario(entry_nombre.get(), user_type_var.get(), entry_email.get(), entry_password.get()),
+                          font=("Arial", 12, "bold"), bg="red", fg="white", relief="flat", width=20, cursor="hand2")
+    btn_registro.pack(pady=10)
 
 if __name__ == "__main__":
     root = tk.Tk()
-    ventana_login_personalizada("Administrador", root)
+    ventana_registro("Administrator")
