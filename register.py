@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox, PhotoImage, Entry, Label, Button, StringVar, OptionMenu
 import webbrowser
 import os
+import bcrypt
 from conectar_bd import conectar_bd
 import login  # Importamos login.py para enlazar correctamente
 
@@ -19,12 +20,20 @@ def redirigir_login(rol, ventana_registro):
     ventana_registro.destroy()  # Cierra la ventana de registro
     login.ventana_login_personalizada(rol, None)  # Llama al login con el rol seleccionado
 
+def hash_password(password):
+    """ Hashea la contraseña antes de almacenarla en la base de datos """
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode(), salt)
+    return hashed.decode()  # Lo almacenamos como string en la base de datos
+
 def registrar_usuario(name, user_type, email, password, rol, ventana_registro):
-    """ Registra un nuevo usuario en la base de datos """
+    """ Registra un nuevo usuario en la base de datos con la contraseña hasheada """
     if not name or not user_type or not email or not password:
         messagebox.showerror("Error", "Todos los campos son obligatorios")
         return
     
+    hashed_password = hash_password(password)  # Hasheamos la contraseña
+
     conn = conectar_bd()
     cursor = conn.cursor()
     
@@ -33,7 +42,7 @@ def registrar_usuario(name, user_type, email, password, rol, ventana_registro):
         INSERT INTO users (name, user_type, email, password) 
         VALUES (%s, %s, %s, %s)
         """
-        cursor.execute(query, (name, user_type, email, password))
+        cursor.execute(query, (name, user_type, email, hashed_password))
         conn.commit()
         conn.close()
         redirigir_login(rol, ventana_registro)  # Redirige al login correspondiente
@@ -76,22 +85,7 @@ def crear_encabezado_footer(ventana):
     footer = tk.Frame(ventana, bg="#D50000", height=120)
     footer.pack(side="bottom", fill="x")
 
-    footer_content = tk.Frame(footer, bg="#D50000")
-    footer_content.pack(fill="x")
-
-    ruta_logo_footer = os.path.join("icono", "logofcd.png")
-
-    try:
-        logo_footer = PhotoImage(file=ruta_logo_footer).subsample(5, 5)
-    except Exception:
-        logo_footer = None
-
-    if logo_footer:
-        lbl_logo_footer = tk.Label(footer_content, image=logo_footer, bg="#D50000")
-        lbl_logo_footer.image = logo_footer
-        lbl_logo_footer.pack(side="left", padx=20, pady=5)
-
-    lbl_direccion = tk.Label(footer_content, text="XICOTÉNCATL 1017, ZONA FEB 10 2015, BARRIO DE LA NORIA, 68100 OAXACA DE JUÁREZ, OAX.",
+    lbl_direccion = tk.Label(footer, text="XICOTÉNCATL 1017, ZONA FEB 10 2015, BARRIO DE LA NORIA, 68100 OAXACA DE JUÁREZ, OAX.",
                              font=("Arial", 9, "bold"), bg="#D50000", fg="white", wraplength=700, justify="center")
     lbl_direccion.pack(pady=(5, 0))
 
@@ -140,7 +134,7 @@ def ventana_registro(rol):
     # Traducción de roles en español y mapeo a inglés
     opciones_roles = {
         "Administrador": "Administrador",
-        "Recepcionista": "Recercionista",
+        "Recepcionista": "Recepcionista",
         "Terapeuta": "Terapeuta"
     }
 

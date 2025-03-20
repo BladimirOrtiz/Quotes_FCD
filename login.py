@@ -2,30 +2,29 @@ import tkinter as tk
 from tkinter import messagebox, PhotoImage, Entry, Label, Button
 import webbrowser
 import os
+import bcrypt
 from conectar_bd import conectar_bd
-import register  # Importamos register.py para el registro de usuarios
-
-# Importamos los banners correspondientes
+import register  
 import banner_admin
 import banner_reception
 import banner_therapeut 
 
-def abrir_url(url):
-    """ Abre enlaces en el navegador """
-    webbrowser.open(url)
-
 def cerrar_aplicacion():
-    """ Cierra la aplicación por completo al cerrar una subventana. """
-    os._exit(0)  # Termina la ejecución del programa
+    """ Cierra la aplicación por completo """
+    os._exit(0)  
 
 def abrir_registro(ventana_login, rol):
     """ Cierra la ventana de login y abre la de registro con el rol correcto """
     ventana_login.destroy()
-    register.ventana_registro(rol)  # Abre la ventana de registro con el rol seleccionado
+    register.ventana_registro(rol)
 
 def recuperar_contraseña():
     """ Simula el proceso de recuperación de contraseña """
     messagebox.showinfo("Recuperación", "Proceso de recuperación de contraseña en desarrollo.")
+
+def abrir_url(url):
+    """ Abre enlaces en el navegador """
+    webbrowser.open(url)
 
 def crear_encabezado_footer(ventana):
     """ Crea el encabezado y footer con estilos unificados """
@@ -62,10 +61,7 @@ def crear_encabezado_footer(ventana):
     footer = tk.Frame(ventana, bg="#D50000", height=120)
     footer.pack(side="bottom", fill="x")
 
-    footer_content = tk.Frame(footer, bg="#D50000")
-    footer_content.pack(fill="x")
-
-    lbl_direccion = tk.Label(footer_content, text="XICOTÉNCATL 1017, ZONA FEB 10 2015, BARRIO DE LA NORIA, 68100 OAXACA DE JUÁREZ, OAX.",
+    lbl_direccion = tk.Label(footer, text="XICOTÉNCATL 1017, ZONA FEB 10 2015, BARRIO DE LA NORIA, 68100 OAXACA DE JUÁREZ, OAX.",
                              font=("Arial", 9, "bold"), bg="#D50000", fg="white", wraplength=700, justify="center")
     lbl_direccion.pack(pady=(5, 0))
 
@@ -93,59 +89,65 @@ def crear_entry(ventana, placeholder, is_password=False):
 
     return entry
 
-def login(usuario, contraseña, rol):
+def login(usuario, contraseña, rol, ventana_login, root):
     """Valida el login y redirige al banner correspondiente según el tipo de usuario."""
     conn = conectar_bd()
     cursor = conn.cursor(dictionary=True)
 
-    query = "SELECT * FROM users WHERE email = %s AND password = %s"
-    cursor.execute(query, (usuario, contraseña))
+    query = "SELECT * FROM users WHERE email = %s"
+    cursor.execute(query, (usuario,))
     user = cursor.fetchone()
 
     conn.close()
 
     if user:
-        if user['user_type'] == rol:
-            messagebox.showinfo("Bienvenido", f"Acceso concedido como {user['user_type']}")
-            
-            # Redirigir según el rol del usuario
-            if rol == "Administrator":
-                banner_admin.mostrar_panel_admin()
-            elif rol == "Receptionist":
-                banner_reception.mostrar_panel_recepcion()
-            elif rol == "Therapist":
-                banner_therapeut.mostrar_panel_terapeuta()
+        stored_password = user["password"]
+        stored_role = user["user_type"]
+
+        if bcrypt.checkpw(contraseña.encode(), stored_password.encode()):
+            if stored_role == rol:
+                ventana_login.destroy()  # ✅ Cierra la ventana de login
+                nueva_ventana = tk.Toplevel(root)  # ✅ Crea una nueva ventana para el panel
+                root.withdraw()  # ✅ Oculta la ventana principal
+
+                # ✅ Pasa correctamente `nueva_ventana` y `root` a cada banner
+                if rol == "Administrador":
+                    banner_admin.mostrar_panel_admin(nueva_ventana, root)
+                elif rol == "Receptionist":
+                    banner_reception.mostrar_panel_recepcion(nueva_ventana, root)
+                elif rol == "Therapist":
+                    banner_therapeut.mostrar_panel_terapeuta(nueva_ventana, root)
+            else:
+                messagebox.showerror("Error", f"El rol ingresado ({rol}) no coincide con el rol almacenado ({stored_role}).")
         else:
-            messagebox.showerror("Error", f"No tienes permisos de {rol}")
+            messagebox.showerror("Error", "Contraseña incorrecta.")
     else:
-        messagebox.showerror("Error", "Credenciales incorrectas")
+        messagebox.showerror("Error", "El usuario no existe.")
 
-def ventana_login_personalizada(rol, ventana_padre):
-    """Crea la ventana de login personalizada y cierra la aplicación al cerrarla."""
 
-    ventana = tk.Toplevel()  # Usamos Toplevel para evitar múltiples Tk()
+def ventana_login_personalizada(rol, root):
+    """Crea la ventana de login personalizada y oculta la aplicación principal."""
+    ventana = tk.Toplevel(root)
     ventana.title(f"Login {rol} - Fundación Corazón Down")
     ventana.geometry("800x500")
     ventana.configure(bg="white")
 
-    if ventana_padre:
-        ventana_padre.withdraw()  # Oculta la ventana principal
-        ventana.protocol("WM_DELETE_WINDOW", lambda: cerrar_aplicacion())  # Cierra la app al cerrar esta ventana
+    root.withdraw()  # ✅ Oculta `root` temporalmente
 
     crear_encabezado_footer(ventana)
 
     tk.Label(ventana, text=f"LOGIN {rol.upper()}", font=("Arial", 16, "bold"), bg="white", fg="black").pack(pady=10)
 
-    # Entradas de usuario y contraseña
     entry_usuario = crear_entry(ventana, "Correo Electrónico")
     entry_password = crear_entry(ventana, "Contraseña", is_password=True)
 
-    # Botón de login
-    btn_login = Button(ventana, text="INICIAR SESIÓN", command=lambda: login(entry_usuario.get(), entry_password.get(), rol),
-                       font=("Arial", 12, "bold"), bg="red", fg="white", relief="flat", width=20, cursor="hand2")
+    btn_login = Button(
+        ventana, text="INICIAR SESIÓN",
+        command=lambda: login(entry_usuario.get(), entry_password.get(), rol, ventana, root),
+        font=("Arial", 12, "bold"), bg="red", fg="white", relief="flat", width=20, cursor="hand2"
+    )
     btn_login.pack(pady=10)
 
-    # Contenedor de hipervínculos
     link_frame = tk.Frame(ventana, bg="white")
     link_frame.pack(pady=10)
 
@@ -157,6 +159,10 @@ def ventana_login_personalizada(rol, ventana_padre):
     lbl_olvido_password.pack(side="left", padx=10)
     lbl_olvido_password.bind("<Button-1>", lambda e: recuperar_contraseña())
 
+    ventana.protocol("WM_DELETE_WINDOW", lambda: root.deiconify())
+
 if __name__ == "__main__":
     root = tk.Tk()
+    root.withdraw()  # ✅ Oculta la ventana principal al inicio
     ventana_login_personalizada("Administrador", root)
+    root.mainloop()  # ✅ Mantiene la aplicación en ejecución
