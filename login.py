@@ -57,13 +57,60 @@ def crear_encabezado_footer(ventana):
         lbl_logo_der.image = logo_derecho
         lbl_logo_der.pack(side="right", padx=10, pady=5)
 
-    # Footer
+   # Footer
     footer = tk.Frame(ventana, bg="#D50000", height=120)
     footer.pack(side="bottom", fill="x")
 
-    lbl_direccion = tk.Label(footer, text="XICOTÉNCATL 1017, ZONA FEB 10 2015, BARRIO DE LA NORIA, 68100 OAXACA DE JUÁREZ, OAX.",
+    footer_content = tk.Frame(footer, bg="#D50000")
+    footer_content.pack(fill="x")
+
+    ruta_logo_footer = os.path.join("icono", "logofcd.png")
+
+    try:
+        logo_footer = PhotoImage(file=ruta_logo_footer).subsample(5, 5)
+    except:
+        logo_footer = None
+
+    if logo_footer:
+        lbl_logo_footer = tk.Label(footer_content, image=logo_footer, bg="#D50000")
+        lbl_logo_footer.image = logo_footer
+        lbl_logo_footer.pack(side="left", padx=20, pady=5)
+
+    # Redes sociales
+    info_frame = tk.Frame(footer_content, bg="#D50000")
+    info_frame.pack(side="left", expand=True)
+
+    redes_frame = tk.Frame(info_frame, bg="#D50000")
+    redes_frame.pack()
+
+    redes = {
+        "Facebook": "ficon.png",
+        "X": "xicon.png",
+        "Instagram": "insicon.png",
+        "TikTok": "ticon.png"
+    }
+    enlaces = {
+        "Facebook": "https://www.facebook.com/FundacionCorazonDown",
+        "X": "https://x.com/mariopmtz",
+        "Instagram": "https://www.instagram.com/fundacioncorazondown",
+        "TikTok": "https://www.tiktok.com/@corazndown"
+    }
+
+    for red, icono in redes.items():
+        ruta_icono = os.path.join("icono", icono)
+        try:
+            img_red = PhotoImage(file=ruta_icono).subsample(2, 2)
+            btn_red = tk.Button(redes_frame, image=img_red, bg="#D50000", relief="flat",
+                                command=lambda u=enlaces[red]: abrir_url(u))
+            btn_red.image = img_red
+            btn_red.pack(side="left", padx=5)
+        except:
+            pass
+
+    lbl_direccion = tk.Label(info_frame, text="XICOTÉNCATL 1017, ZONA FEB 10 2015, BARRIO DE LA NORIA, 68100 OAXACA DE JUÁREZ, OAX.",
                              font=("Arial", 9, "bold"), bg="#D50000", fg="white", wraplength=700, justify="center")
     lbl_direccion.pack(pady=(5, 0))
+
 
 def crear_entry(ventana, placeholder, is_password=False):
     """ Crea un campo de entrada estilizado con placeholder dinámico. """
@@ -142,7 +189,7 @@ def ventana_login_personalizada(rol, root):
     entry_password = crear_entry(ventana, "Contraseña", is_password=True)
 
     btn_login = Button(
-        ventana, text="INICIAR SESIÓN",
+        ventana, text="Iniciar Sesión",
         command=lambda: login(entry_usuario.get(), entry_password.get(), rol, ventana, root),
         font=("Arial", 12, "bold"), bg="red", fg="white", relief="flat", width=20, cursor="hand2"
     )
@@ -151,11 +198,11 @@ def ventana_login_personalizada(rol, root):
     link_frame = tk.Frame(ventana, bg="white")
     link_frame.pack(pady=10)
 
-    lbl_crear_cuenta = tk.Label(link_frame, text="CREAR CUENTA", font=("Arial", 10, "bold"), fg="orange", cursor="hand2", bg="white")
+    lbl_crear_cuenta = tk.Label(link_frame, text="Crear cuenta", font=("Arial", 10, "bold"), fg="orange", cursor="hand2", bg="white")
     lbl_crear_cuenta.pack(side="left", padx=10)
     lbl_crear_cuenta.bind("<Button-1>", lambda e: abrir_registro(ventana, rol))
 
-    lbl_olvido_password = tk.Label(link_frame, text="OLVIDÉ MI CONTRASEÑA", font=("Arial", 10, "bold"), fg="orange", cursor="hand2", bg="white")
+    lbl_olvido_password = tk.Label(link_frame, text="Olvide mi contraseña", font=("Arial", 10, "bold"), fg="orange", cursor="hand2", bg="white")
     lbl_olvido_password.pack(side="left", padx=10)
     lbl_olvido_password.bind("<Button-1>", lambda e: recuperar_contraseña())
 
