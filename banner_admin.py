@@ -3,6 +3,7 @@ from tkinter import Button, Label, PhotoImage, Frame
 import webbrowser
 import os
 import login  # Para cerrar sesión y volver al login
+from quotes_register import ventana_registro_cita  # ✅ Importar al inicio
 
 def cerrar_sesion(ventana, root):
     ventana.destroy()
@@ -46,14 +47,14 @@ def mostrar_panel_admin(ventana, root):
     frame_principal.pack(expand=True, fill="both", pady=20)
 
     botones = [
-        ("icono/calendario.png", "REGISTRO DE CITAS", "#FF9800", lambda: print("Registro de citas")),
+        ("icono/calendario.png", "REGISTRO DE CITAS", "#FF9800", ventana_registro_cita),
         ("icono/gestion.png", "GESTIÓN DE CITAS", "#3F51B5", lambda: print("Gestión de citas")),
         ("icono/estadisticas.png", "ESTADÍSTICAS", "#4CAF50", lambda: print("Estadísticas"))
     ]
 
     for i, (img_path, text, color, command) in enumerate(botones):
         try:
-            img = PhotoImage(file=img_path).subsample(4, 4)  # Tamaño visible
+            img = PhotoImage(file=img_path).subsample(4, 4)
         except:
             img = None
 
